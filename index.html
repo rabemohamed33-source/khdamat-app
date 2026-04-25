@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#3b82f6">
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>خدمات عامة - ابحث عن عامل قريب منك</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* نفس استايل الموقع الأول بالضبط */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background: #f8f9fa; line-height: 1.6; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px 0; position: sticky; top: 0; z-index: 100; }
+        .nav { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .logo { font-size: 1.8em; font-weight: bold; }
+        .nav-buttons { display: flex; gap: 15px; }
+        .btn { padding: 12px 25px; border: none; border-radius: 25px; font-weight: bold; cursor: pointer; transition: all 0.3s; text-decoration: none; display: inline-block; }
+        .btn-primary { background: #ff6b6b; color: white; }
+        .btn-primary:hover { background: #ff5252; transform: translateY(-2px); }
+        .btn-secondary { background: white; color: #667eea; }
+        .btn-secondary:hover { background: #f0f0f0; transform: translateY(-2px); }
+        .sidebar { position: fixed; right: -300px; top: 0; width: 300px; height: 100vh; background: white; box-shadow: -5px 0 20px rgba(0,0,0,0.1); transition: right 0.3s; z-index: 99; }
+        .sidebar.open { right: 0; }
+        .sidebar-toggle { background: none; border: none; font-size: 1.5em; cursor: pointer; color: white; position: absolute; left: -50px; top: 20px; }
+        .sidebar-nav { padding: 80px 30px 30px; }
+        .sidebar-nav a { display: block; padding: 15px; color: #333; text-decoration: none; border-bottom: 1px solid #eee; }
+        .sidebar-nav a:hover { background: #f8f9fa; }
+        .main { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
+        .hero { text-align: center; background: white; padding: 60px 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 40px; }
+        .hero h1 { font-size: 3em; color: #333; margin-bottom: 20px; }
+        .hero p { font-size: 1.3em; color: #666; margin-bottom: 30px; }
+        .mode-buttons { display: flex; gap: 20px; justify-content: center; margin-bottom: 40px; flex-wrap: wrap; }
+        .mode-btn { padding: 20px 40px; font-size: 1.2em; border-radius: 20px; border: none; cursor: pointer; transition: all 0.3s; font-weight: bold; color: white; }
+        .client-mode { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .client-mode:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(34,197,94,0.4); }
+        .worker-mode { background: linear-gradient(135deg, #38bdf8, #0ea5e9); }
+        .worker-mode:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(56,189,248,0.4); }
+        .filters { display: flex; gap: 15px; margin-bottom: 40px; flex-wrap: wrap; }
+        .filter-input { padding: 15px; border: 2px solid #e9ecef; border-radius: 12px; font-size: 1em; flex: 1; min-width: 250px; }
+        .workers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 30px; }
+        .worker-card { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); transition: all 0.3s; }
+        .worker-card:hover { transform: translateY(-10px); box-shadow: 0 20px 50px rgba(0,0,0,0.15); }
+        .worker-img { height: 200px; background: linear-gradient(45deg, #667eea, #764ba2); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 4em; color: white; }
+        .worker-img img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; }
+        .worker-info { padding: 30px; }
+        .worker-name { font-size: 1.6em; font-weight: bold; color: #333; margin-bottom: 10px; }
+        .worker-job { color: #667eea; font-size: 1.2em; font-weight: 500; margin-bottom: 15px; }
+        .worker-location { color: #666; margin-bottom: 15px; }
+        .worker-rating { color: #f59e0b; font-size: 1.1em; margin-bottom: 15px; }
+        .worker-actions { display: flex; gap: 10px; }
+        .whatsapp-btn { flex: 1; background: #25D366; color: white; text-align: center; padding: 15px; border-radius: 12px; font-weight: bold; text-decoration: none; }
+        .call-btn { flex: 1; background: #28a745; color: white; text-align: center; padding: 15px; border-radius: 12px; font-weight: bold; text-decoration: none; }
+        .rating-buttons { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px; }
+        .rating-btn { background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+        .rating-btn:hover { background: #e5e7eb; transform: translateY(-1px); }
+        .form-section { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 40px; display: none; }
+        .form-section.active { display: block; }
+        .form-group { margin-bottom: 25px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+        .form-group input { width: 100%; padding: 15px; border: 2px solid #e9ecef; border-radius: 12px; font-size: 1em; }
+        .form-group input:focus { outline: none; border-color: #667eea; }
+        .hidden { display: none; }
+        @media (max-width: 768px) { 
+            .filters, .mode-buttons, .worker-actions { flex-direction: column; } 
+            .hero h1 { font-size: 2em; }
+            .filter-input { min-width: auto; }
+/* أضف هذا إلى نهاية الـ <style> الحالي */
+@media (max-width: 768px) {
+    /* الهيدر */
+    .header { padding: 15px 0; }
+    .nav { padding: 0 15px; }
+    .logo { font-size: 1.4em; }
+    
+    /* المحتوى الرئيسي */
+    .main { margin: 20px auto; padding: 0 15px; }
+    .hero { padding: 40px 20px; margin-bottom: 30px; }
+    .hero h1 { font-size: 2em; line-height: 1.2; }
+    .hero p { font-size: 1.1em; }
+    
+    /* الأزرار */
+    .mode-buttons { flex-direction: column; gap: 15px; }
+    .mode-btn { padding: 18px 30px; font-size: 1.1em; width: 100%; max-width: 300px; }
+    
+    /* الفلاتر */
+    .filters { flex-direction: column; gap: 10px; }
+    .filter-input { min-width: auto; font-size: 16px; /* منع zoom على iOS */ }
+    
+    /* البطاقات */
+    .workers-grid { 
+        grid-template-columns: 1fr; 
+        gap: 20px; 
+        padding: 0 5px;
+    }
+    .worker-card { 
+        margin: 0 auto; 
+        max-width: 350px; 
+        min-height: 300px;
+    }
+    .worker-img { 
+        height: 160px; 
+        font-size: 3em; 
+    }
+    .worker-info { padding: 20px; }
+    .worker-name { font-size: 1.4em; }
+    .worker-job { font-size: 1.1em; }
+    
+    /* الأزرار داخل البطاقات */
+    .worker-actions { flex-direction: column; }
+    .whatsapp-btn, .call-btn { 
+        padding: 16px 20px; 
+        font-size: 1em; 
+        margin: 0;
+    }
+    
+    /* النماذج */
+    .form-section { padding: 30px 20px; }
+    .form-group input { 
+        font-size: 16px; 
+        padding: 18px 15px; 
+    }
+    
+    /* الشريط الجانبي */
+    .sidebar { width: 280px; }
+    
+    /* إخفاء العناصر غير الضرورية */
+    .sidebar-nav a { padding: 12px; font-size: 0.95em; }
+}
+
+/* شاشات صغيرة جداً (أقل من 480px) */
+@media (max-width: 480px) {
+    .hero { padding: 30px 15px; }
+    .hero h1 { font-size: 1.7em; }
+    .hero p { font-size: 1em; }
+    
+    .worker-img { height: 140px; font-size: 2.5em; }
+    .worker-info { padding: 18px 15px; }
+    
+    .main { padding: 0 10px; }
+    .workers-grid { gap: 15px; }
+    
+    .btn { padding: 12px 20px; font-size: 0.95em; }
+}
+
+/* تحسينات للـ iPhone X وأجهزة مشابهة */
+@media (max-width: 414px) and (min-height: 700px) {
+    .hero { padding: 35px 20px; }
+    .mode-btn { padding: 20px 35px; }
+}
+
+/* منع التكبير عند التركيز على المدخلات */
+input, select, textarea {
+    font-size: 16px;
+}
+
+/* تحسين للـ landscape mode */
+@media (max-height: 500px) and (orientation: landscape) {
+    .hero { padding: 30px 20px; }
+    .hero h1 { font-size: 1.6em; }
+}
+/* أضف هذا إلى الـ <style> */
+.worker-location {
+    color: #666;
+    margin-bottom: 12px;
+    font-size: 1em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* تحسين للهواتف */
+@media (max-width: 768px) {
+    .worker-location {
+        font-size: 0.95em;
+        margin-bottom: 10px;
+    }
+}
+        }
+    </style>
+</head>
+<body>
+    <!-- الهيدر - نفس تصميم الموقع الأول -->
+    <div class="header">
+        <div class="nav">
+            <div class="logo">👨‍🌾 خدمات عامة</div>
+            <div class="nav-buttons">
+                <button class="btn btn-secondary" onclick="toggleSidebar()">☰</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- الشريط الجانبي - نفس تصميم الموقع الأول -->
+    <div class="sidebar" id="sidebar">
+        <button class="sidebar-toggle" onclick="toggleSidebar()">✕</button>
+        <div class="sidebar-nav">
+            <a href="#">من نحن</a>
+            <a href="#">اتصل بنا</a>
+            <a href="#">الشروط والأحكام</a>
+            <a href="#">سياسة الخصوصية</a>
+        </div>
+    </div>
+
+    <!-- المحتوى الرئيسي -->
+    <div class="main">
+        <!-- Hero Section - نفس تصميم الموقع الأول -->
+        <div class="hero">
+            <h1>ابحث عن عامل ماهر قريب منك</h1>
+            <p> كهربائيين • نجارين • سباكين • عمال تنظيف • وأكثر من 50 مهنة متوفرة الآن وايضا المحلات • المطاعم</p>
+        </div>
+
+        <!-- أزرار الوضع بتصميم الموقع الأول -->
+        <div class="mode-buttons">
+            <button id="btnClient" class="mode-btn client-mode">👤 أنا عميل</button>
+            <button id="btnWorker" class="mode-btn worker-mode">🛠️ أنا عامل</button>
+        </div>
+
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>تسجيل الخدمة</title>
+  <style>
+   
+
+    .plan {
+      background-color: #fff;
+      border: 2px solid #4B0082; /* نيلي */
+      border-radius: 10px;
+      width: 300px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .plan h2 {
+      color: #4B0082;
+    }
+
+    .plan ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .plan ul li {
+      margin: 10px 0;
+    }
+
+    .btn {
+      display: inline-block;
+      background-color: #4B0082;
+      color: #fff;
+      padding: 10px 20px;
+      margin-top: 15px;
+      border-radius: 5px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+
+    .btn:hover {
+      background-color: #5D3FD3;
+    }
+
+  .service-btn {
+    background-color: #007bff;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .service-btn:hover {
+    background-color: #0056b3;
+  }
+</style>
+</head> <body>
+<button class="service-btn" onclick="window.location.href='service-request.html'">
+  طلب خدمة
+</button>
+<p class="description">استخدم هذا الخيار لطلب خدمة  بسهولة.</p>
+</head> <body>
+
+        <!-- قسم العميل -->
+        <div id="clientPage" class="form-section">
+            <div class="filters">
+                <input type="text" class="filter-input" id="search" placeholder="ابحث بالحرفة...">
+            </div>
+            <div id="workersList" class="workers-grid"></div>
+        </div>
+
+        <!-- قسم العامل -->
+       <div id="workerPage" class="form-section card">
+    <h2 style="text-align:center; margin-bottom:30px; color:#333;">تسجيل عامل 🛠️</h2>
+    
+    <div class="form-group">
+        <label>الاسم الكامل</label>
+        <input id="wName" placeholder="أدخل اسمك الكامل" required>
+    </div>
+    
+    <div class="form-group">
+        <label>رقم الهاتف</label>
+        <input id="wPhone" type="tel" placeholder="010xxxxxxxx" required>
+    </div>
+    
+    <div class="form-group">
+        <label>الحرفة / الوظيفة</label>
+        <input id="wJob" placeholder="مثال: كهربائي، نجار، سباك..." required>
+    </div>
+    
+    <div class="form-group">
+        <label>العنوان (اختياري)</label>
+        <input id="address" type="text" placeholder="المنطقة أو الحي">
+    </div>
+    
+    <div class="form-group">
+        <label>رابط الصورة (اختياري)</label>
+        <input id="wImage" type="url" placeholder="https://example.com/image.jpg">
+    </div>
+    
+    <button id="saveBtn" class="btn btn-primary">نشر البطاقة الآن</button>
+</div>
+    </div>
+
+    <!-- نفس الـ JavaScript الأصلي بدون تغيير -->
+    <script>
+        // كائن لتخزين بيانات التقييم لكل عامل
+        const ratings = {};
+
+        // عند تحميل الصفحة، استرجاع التقييمات من LocalStorage
+        window.onload = function() {
+            for (let key in localStorage) {
+                if (key.startsWith("rating_")) {
+                    const workerId = key.replace("rating_", "");
+                    const data = JSON.parse(localStorage.getItem(key));
+                    ratings[workerId] = data;
+                }
+            }
+        };
+
+        // دالة التقييم
+        function rateWorker(workerId, stars) {
+            if (!ratings[workerId]) {
+                ratings[workerId] = { total: 0, count: 0 };
+            }
+            ratings[workerId].total += stars;
+            ratings[workerId].count += 1;
+            const avg = (ratings[workerId].total / ratings[workerId].count).toFixed(1);
+            localStorage.setItem("rating_" + workerId, JSON.stringify(ratings[workerId]));
+        }
+
+        // وظائف الشريط الجانبي
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        // نفس JavaScript الأصلي لـ Supabase
+        document.addEventListener("DOMContentLoaded", function(){
+            const SUPABASE_URL = "https://jcftfbqqhwhwbocjfpmh.supabase.co";
+            const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjZnRmYnFxaHdod2JvY2pmcG1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxOTIwMzksImV4cCI6MjA4Mjc2ODAzOX0.125BNiA9cnqe4EkEiIoKikvYzauxqhgrXK2LMEIAw5g";
+            const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            const workerPage = document.getElementById("workerPage");
+            const clientPage = document.getElementById("clientPage");
+            const workersList = document.getElementById("workersList");
+            const searchInput = document.getElementById("search");
+
+            document.getElementById("btnWorker").onclick = ()=> {
+                workerPage.classList.add("active");
+                clientPage.classList.remove("active");
+            };
+
+            document.getElementById("btnClient").onclick = ()=> {
+                clientPage.classList.add("active");
+                workerPage.classList.remove("active");
+                loadWorkers();
+            };
+
+            document.getElementById("saveBtn").onclick = saveWorker;
+
+            function getDeviceId(){
+                let id = localStorage.getItem("device_id");
+                if(!id){
+                    id = crypto.randomUUID();
+                    localStorage.setItem("device_id", id);
+                }
+                return id;
+            }
+
+           async function saveWorker(){
+    const name = document.getElementById("wName").value.trim();
+    const phone = document.getElementById("wPhone").value.trim();
+    const job = document.getElementById("wJob").value.trim();
+    const address = document.getElementById("address").value.trim(); // حفظ العنوان
+    const image_url = document.getElementById("wImage").value.trim();
+    const device_id = getDeviceId();
+
+    if(!name || !phone || !job) return alert("من فضلك أكمل البيانات الأساسية");
+
+    const { data: exist } = await supa.from("workers").select("*").eq("device_id", device_id);
+
+    if(exist.length > 0){
+        await supa.from("workers").update({ 
+            name, 
+            phone, 
+            job, 
+            address,  // تحديث العنوان
+            image_url 
+        }).eq("device_id", device_id);
+    } else {
+        await supa.from("workers").insert({ 
+            name, 
+            phone, 
+            job, 
+            address,  // حفظ العنوان الجديد
+            image_url,
+            device_id 
+        });
+    }
+
+    alert("✅ تم نشر بطاقتك بنجاح مع العنوان!");
+    loadWorkers();
+}
+            async function loadWorkers(){
+                const { data } = await supa.from("workers").select("*");
+
+                const search = searchInput.value.trim();
+                const filtered = search ? data.filter(w=>w.job.includes(search)) : data;
+
+                workersList.innerHTML = filtered.map(w => `
+                    <div class="worker-card">
+                        ${w.image_url ? `<img src="${w.image_url}" alt="${w.name}" style="width:60px; border-radius:50%;">` : ""}
+                        <div class="worker-img">${w.image_url ? '' : '👷'}</div>
+                        <div class="worker-info">
+                            <strong class="worker-name">👤 ${w.name}</strong><br>
+                            <div class="worker-job">🔧 ${w.job}</div>
+                            <div class="worker-location">📞 ${w.phone}</div>
+                            <div class="worker-location">📍 ${w.address || 'غير محدد'}</div>
+                            <div class="worker-rating">
+                                تقييم:
+                                <span>
+                                    <button class="rating-btn" onclick="rateWorker(${w.id}, 1)">1⭐</button>
+                                    <button class="rating-btn" onclick="rateWorker(${w.id}, 2)">2⭐</button>
+                                    <button class="rating-btn" onclick="rateWorker(${w.id}, 3)">3⭐</button>
+                                    <button class="rating-btn" onclick="rateWorker(${w.id}, 4)">4⭐</button>
+                                    <button class="rating-btn" onclick="rateWorker(${w.id}, 5)">5⭐</button>
+                                </span>
+                            </div>
+                            <div class="worker-actions">
+                               <a class="whatsapp-btn" href="https://wa.me/20${w.phone.replace('+', '').replace(' ', '').replace('-', '')}" target="_blank">💬 واتساب</a>
+
+                                <a class="call-btn" href="tel:${w.phone}">📞 اتصال</a>
+                            </div>
+                        </div>
+                    </div>
+                `).join("");
+            }
+
+            searchInput.oninput = loadWorkers;
+        });
+    </script>
+</body>
+</html>
