@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>طلب خدمة - عمال كفاءة</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* نفس استايل الموقع الرئيسي */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    body { background: #f8f9fa; line-height: 1.6; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px 0; position: sticky; top: 0; z-index: 100; transition: all 0.3s; }
+    .header:hover { box-shadow: 0 5px 20px rgba(102,126,234,0.4); }
+    .nav { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+    .logo { font-size: 1.8em; font-weight: bold; }
+    .btn { padding: 12px 25px; border: none; border-radius: 25px; font-weight: bold; cursor: pointer; transition: all 0.3s; text-decoration: none; display: inline-block; }
+    .btn-primary { background: #ff6b6b; color: white; }
+    .btn-primary:hover { background: #ff5252; transform: translateY(-2px); }
+    .btn-secondary { background: white; color: #667eea; }
+    .btn-secondary:hover { background: #f0f0f0; transform: translateY(-2px); }
+    .main { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
+    .hero { text-align: center; background: white; padding: 60px 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 40px; }
+    .hero h1 { font-size: 3em; color: #333; margin-bottom: 20px; }
+    .hero p { font-size: 1.3em; color: #666; margin-bottom: 30px; }
+    .form-section { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 40px; }
+    .form-group { margin-bottom: 25px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; font-size: 1.1em; }
+    .form-group input, .form-group textarea { width: 100%; padding: 18px 20px; border: 2px solid #e9ecef; border-radius: 15px; font-size: 1.1em; background: white; transition: all 0.3s; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); transform: translateY(-1px); }
+    .services-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 30px; }
+    .service-card { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); transition: all 0.3s; border-left: 5px solid #ff6b6b; }
+    .service-card:hover { transform: translateY(-10px); box-shadow: 0 20px 50px rgba(0,0,0,0.15); }
+    .service-img { height: 150px; background: linear-gradient(45deg, #ff6b6b, #feca57); display: flex; align-items: center; justify-content: center; font-size: 3em; color: white; }
+    .service-info { padding: 25px; }
+    .service-details { font-size: 1.1em; color: #333; margin-bottom: 15px; line-height: 1.5; }
+    .service-contact { color: #666; margin-bottom: 15px; }
+    .service-actions { display: flex; gap: 10px; }
+    .whatsapp-btn { flex: 1; background: #25D366; color: white; text-align: center; padding: 15px; border-radius: 12px; font-weight: bold; text-decoration: none; }
+    .call-btn { flex: 1; background: #28a745; color: white; text-align: center; padding: 15px; border-radius: 12px; font-weight: bold; text-decoration: none; }
+    @media (max-width: 768px) { .hero h1 { font-size: 2em; } .form-section { padding: 30px 20px; } .services-grid { grid-template-columns: 1fr; gap: 20px; } .service-actions { flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <!-- الهيدر -->
+  <div class="header">
+    <div class="nav">
+      <div class="logo">👷 عمال كفاءة</div>
+      <a href="index.html" class="btn btn-secondary">🏠 العودة</a>
+    </div>
+  </div>
+
+  <!-- المحتوى -->
+  <div class="main">
+    <div class="hero">
+      <h1>📋 اطلب الخدمة التي تحتاجها</h1>
+      <p>اكتب طلبك وسيتم التواصل معك من több workers</p>
+    </div>
+
+    <!-- النموذج -->
+    <div class="form-section">
+      <form id="serviceForm">
+        <div class="form-group">
+          <label for="details">تفاصيل الطلب:</label>
+          <textarea id="details" rows="4" placeholder="مثال: أحتاج نجاري لإصلاح باب خشب..." required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="contact">رقم الواتساب:</label>
+          <input type="tel" id="contact" placeholder="010xxxxxxxx" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%; font-size:1.2em; padding:20px;">📤 نشر الطلب</button>
+      </form>
+    </div>
+
+    <!-- الطلبات -->
+    <div class="form-section">
+      <h2 style="text-align:center; margin-bottom:30px; color:#333;">الطلبات المتاحة 🛠️</h2>
+      <div class="services-grid" id="servicesList"></div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    const SUPABASE_URL = "https://jcftfbqqhwhwbocjfpmh.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjZnRmYnFxaHdod2JvY2pmcG1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxOTIwMzksImV4cCI6MjA4Mjc2ODAzOX0.125BNiA9cnqe4EkEiIoKikvYzauxqhgrXK2LMEIAw5g";
+    const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const form = document.getElementById('serviceForm');
+    const servicesList = document.getElementById('servicesList');
+
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const details = document.getElementById('details').value;
+      const contact = document.getElementById('contact').value;
+      const phone = contact.replace(/\D/g, "");
+      const phoneWithCode = "20" + phone;
+
+      const { data, error } = await supa.from('requests').insert([{ 
+        request_details: details, 
+        contact_number: phoneWithCode 
+      }]);
+
+      if(error) {
+        alert("❌ خطأ: " + error.message);
+        return;
+      }
+
+      addServiceCard({ request_details: details, contact_number: phoneWithCode });
+      form.reset();
+      alert('✅ تم نشر طلبك!');
+    });
+
+    function addServiceCard(service) {
+      const card = document.createElement('div');
+      card.className = 'service-card';
+      card.innerHTML = `
+        <div class="service-img">🛠️</div>
+        <div class="service-info">
+          <div class="service-details">${service.request_details}</div>
+          <div class="service-contact">📱 ${service.contact_number}</div>
+          <div class="service-actions">
+            <a href="https://wa.me/${service.contact_number}" class="whatsapp-btn" target="_blank">💬 واتساب</a>
+            <a href="tel:${service.contact_number}" class="call-btn">📞 اتصال</a>
+          </div>
+        </div>
+      `;
+      servicesList.insertBefore(card, servicesList.firstChild);
+    }
+
+    async function loadServices(){
+      const { data, error } = await supa.from('requests').select("*").order('created_at', { ascending: false }).limit(20);
+      if(error) { console.error(error); return; }
+      servicesList.innerHTML = "";
+      data.forEach(s => addServiceCard(s));
+    }
+
+    loadServices();
+  </script>
+</body>
+</html>
