@@ -377,8 +377,7 @@
             <div class="mode-buttons">
                 <button id="btnClient" class="mode-btn client-mode">👤 أنا عميل (ابحث)</button>
                 <button id="btnWorker" class="mode-btn worker-mode">🛠️ أنا عامل (سجل خدمتك)</button>
-                
-<a href="service-request.html" class="btn btn-primary">📋 اطلب خدمة سريعاً</a>
+                <button id="btnOpenRequest" class="mode-btn request-mode">📋 اطلب خدمة سريعاً</button>
             </div>
 
             <div class="description">اختر التبويب المناسب لك من الأعلى للتنقل بين البحث، التسجيل، أو إرسال طلب سريع.</div>
@@ -391,7 +390,6 @@
             </div>
 
             <div id="quickRequestPage" class="form-section">
-                  
                 <h2 style="text-align:center; margin-bottom:20px; color:#333; border:none;">📋 نموذج طلب خدمة سريع</h2>
                 <p class="description">أرسل طلبك مباشرة لإدارة الموقع وسيتم توفير الفني المناسب لك فوراً!</p>
                 
@@ -745,7 +743,9 @@
             const quickRequestPage = document.getElementById("quickRequestPage");
             const workersList = document.getElementById("workersList");
             const searchInput = document.getElementById("search");
+            let localWorkersArray = []; // لتخزين العمال محلياً لسهولة الفلترة والبحث السريع
 
+            // أزرار التنقل الداخلية داخل صفحة الخدمات
             document.getElementById("btnWorker").onclick = ()=> {
                 workerPage.classList.add("active");
                 clientPage.classList.remove("active");
@@ -765,128 +765,146 @@
                 workerPage.classList.remove("active");
             };
 
-            // معالجة إرسال طلب الخدمة السريع عبر واتساب الإدارة
-            document.getElementById("submitRequestBtn").onclick = function() {
-                const reqName = document.getElementById("reqName").value.trim();
-                const reqPhone = document.getElementById("reqPhone").value.trim();
-                const reqJob = document.getElementById("reqJob").value.trim();
-                const reqDetails = document.getElementById("reqDetails").value.trim();
-
-                if(!reqName || !reqPhone || !reqJob) {
-                    return alert("من فضلك املأ الحقول الأساسية (الاسم، الهاتف، والخدمة المطلوب)");
-                }
-
-                const message = `🚨 *طلب خدمة سريع جديد* 🚨%0A%0A*اسم العميل:* ${reqName}%0A*رقم التواصل:* ${reqPhone}%0A*الخدمة المطلوبة:* ${reqJob}%0A*تفاصيل الطلب:* ${reqDetails || 'لا يوجد تفاصيل إضافية'}`;
-                const whatsappURL = `https://api.whatsapp.com/send?phone=${WEBSITE_ADMIN_PHONE}&text=${message}`;
+            // دالة جلب العمال من سيرفر Supabase وعرضهم في الدليل
+            async function loadWorkersFromServer() {
+                workersList.innerHTML = "<p style='text-align:center; padding:20px; width:100%; grid-column:1/-1;'>جاري تحميل دليل العمال المهنيين...</p>";
                 
-                window.open(whatsappURL, '_blank');
+                const { data, error } = await supa.from("workers").select("*").order("id", { ascending: false });
                 
-                // إعادة تعيين الحقول بعد الإرسال
-                document.getElementById("reqName").value = "";
-                document.getElementById("reqPhone").value = "";
-                document.getElementById("reqJob").value = "";
-                document.getElementById("reqDetails").value = "";
-            };
-
-            document.getElementById("saveBtn").onclick = saveWorker;
-
-            function getWorkerDeviceId(){
-                let id = localStorage.getItem("device_id");
-                if(!id){
-                    id = crypto.randomUUID();
-                    localStorage.setItem("device_id", id);
+                if (error) {
+                    workersList.innerHTML = "<p style='text-align:center; padding:20px; color:red; grid-column:1/-1;'>حدث خطأ أثناء تحميل البيانات من السيرفر.</p>";
+                    console.error(error);
+                    return;
                 }
-                return id;
+                
+                localWorkersArray = data || [];
+                displayWorkers(localWorkersArray);
             }
+            window.loadWorkersFromServer = loadWorkersFromServer;
 
-            async function saveWorker(){
-                const name = document.getElementById("wName").value.trim();
-                const phone = document.getElementById("wPhone").value.trim();
-                const job = document.getElementById("wJob").value.trim();
-                const address = document.getElementById("address").value.trim(); 
-                
-                const imageFile = document.getElementById("wImageFile").files[0];
-                const base64Image = await convertImageToBase64(imageFile);
-                
-                const device_id = getWorkerDeviceId();
-
-                if(!name || !phone || !job) return alert("من فضلك أكمل البيانات الأساسية");
-
-                const { data: exist } = await supa.from("workers").select("*").eq("device_id", device_id);
-
-                const workerPayload = { 
-                    name, 
-                    phone, 
-                    job, 
-                    address
-                };
-                
-                if(base64Image) {
-                    workerPayload.image_url = base64Image;
+            // دالة بناء وعرض بطاقات العمال في صفحة البحث
+            function displayWorkers(workers) {
+                workersList.innerHTML = "";
+                if(workers.length === 0) {
+                    workersList.innerHTML = "<p style='text-align:center; padding:20px; grid-column:1/-1;'>لا يوجد عمال مسجلين في هذا التصنيف حالياً.</p>";
+                    return;
                 }
 
-                if(exist && exist.length > 0){
-                    await supa.from("workers").update(workerPayload).eq("device_id", device_id);
-                } else {
-                    if(!workerPayload.image_url) {
-                        workerPayload.image_url = defaultImgWorker;
-                    }
-                    workerPayload.device_id = device_id;
-                    await supa.from("workers").insert(workerPayload);
-                }
+                workers.forEach(worker => {
+                    // حساب النجوم التقييمية المخزنة في الـ localStorage لهذا الجهاز
+                    const rData = ratings[worker.id] || { total: 0, count: 0 };
+                    const avg = rData.count > 0 ? (rData.total / rData.count).toFixed(1) : "جديد";
+                    const starsStr = rData.count > 0 ? "⭐ ".repeat(Math.round(rData.total / rData.count)) : "⭐ لم يقيم بعد";
 
-                alert("✅ تم نشر بطاقتك بنجاح في قاعدة البيانات السحابية بالصورة المرفوعة!");
-                document.getElementById("wName").value = "";
-                document.getElementById("wPhone").value = "";
-                document.getElementById("wJob").value = "";
-                document.getElementById("address").value = "";
-                document.getElementById("wImageFile").value = "";
-                loadWorkersFromServer();
-            }
-
-            async function loadWorkersFromServer(){
-                const { data } = await supa.from("workers").select("*");
-                if(!data) return;
-
-                const search = searchInput.value.trim();
-                const filtered = search ? data.filter(w=>w.job.includes(search)) : data;
-
-                workersList.innerHTML = filtered.map(w => {
-                    const rData = ratings[w.id] || { total: 0, count: 0 };
-                    const avg = rData.count > 0 ? (rData.total / rData.count).toFixed(1) : "لا يوجد";
-                    
-                    return `
+                    workersList.innerHTML += `
                         <div class="worker-card">
                             <div class="worker-img">
-                                <img src="${w.image_url || defaultImgWorker}" alt="${w.name}">
+                                ${worker.image_url ? `<img src="${worker.image_url}" alt="${worker.name}">` : `🛠️`}
                             </div>
                             <div class="worker-info">
-                                <strong class="worker-name">👤 ${w.name}</strong>
-                                <div class="worker-job">🔧 ${w.job}</div>
-                                <div class="worker-location">📍 ${w.address || 'غير محدد'}</div>
-                                <div class="worker-rating">⭐ التقييم الحالي: ${avg} (${rData.count} صوت)</div>
-                                <div style="margin-bottom:12px;">
-                                    <button class="rating-btn" onclick="rateWorker(${w.id}, 1)">1⭐</button>
-                                    <button class="rating-btn" onclick="rateWorker(${w.id}, 2)">2⭐</button>
-                                    <button class="rating-btn" onclick="rateWorker(${w.id}, 3)">3⭐</button>
-                                    <button class="rating-btn" onclick="rateWorker(${w.id}, 4)">4⭐</button>
-                                    <button class="rating-btn" onclick="rateWorker(${w.id}, 5)">5⭐</button>
+                                <span class="worker-name">${worker.name}</span>
+                                <div class="worker-job">${worker.job}</div>
+                                <div class="worker-location">📍 ${worker.address || 'داخل القرية'}</div>
+                                <div class="worker-rating">
+                                    <span>التقييم: ${avg} (${rData.count} صوت)</span><br>
+                                    <small>${starsStr}</small>
+                                    <div style="margin-top:5px; display:flex; gap:3px;">
+                                        <button class="rating-btn" onclick="rateWorker(${worker.id}, 1)">1⭐</button>
+                                        <button class="rating-btn" onclick="rateWorker(${worker.id}, 3)">3⭐</button>
+                                        <button class="rating-btn" onclick="rateWorker(${worker.id}, 5)">5⭐</button>
+                                    </div>
                                 </div>
                                 <div class="worker-actions">
-                                    <a class="whatsapp-btn" href="https://wa.me/20${w.phone.replace('+', '').replace(' ', '').replace('-', '')}" target="_blank">💬 راسل واتساب</a>
-                                    <a class="call-btn" href="tel:${w.phone}">📞 اتصال مباشر</a>
+                                    <a href="https://wa.me/${worker.phone.startsWith('2') ? worker.phone : '2' + worker.phone}" target="_blank" class="whatsapp-btn">💬 تواصل واتساب</a>
+                                    <a href="tel:${worker.phone}" class="call-btn">📞 اتصال هاتفي مباشر</a>
                                 </div>
                             </div>
                         </div>
                     `;
-                }).join("");
+                });
             }
 
-            window.loadWorkersFromServer = loadWorkersFromServer;
-            searchInput.oninput = loadWorkersFromServer;
-        });
+            // ميزة البحث والفلترة الذكية أثناء الكتابة
+            searchInput.oninput = () => {
+                const query = searchInput.value.toLowerCase().trim();
+                const filtered = localWorkersArray.filter(w => 
+                    w.job.toLowerCase().includes(query) || 
+                    w.name.toLowerCase().includes(query) ||
+                    (w.address && w.address.toLowerCase().includes(query))
+                );
+                displayWorkers(filtered);
+            };
 
-        renderShops();
+            // إرسال طلب خدمة سريع عبر الواتساب مباشرة إلى إدارة الموقع
+            document.getElementById("submitRequestBtn").onclick = () => {
+                const name = document.getElementById("reqName").value.trim();
+                const phone = document.getElementById("reqPhone").value.trim();
+                const job = document.getElementById("reqJob").value.trim();
+                const details = document.getElementById("reqDetails").value.trim();
+
+                if(!name || !phone || !job) {
+                    alert("برجاء ملء الحقول الأساسية (الاسم، الهاتف، والحرفة) لإرسال طلبك.");
+                    return;
+                }
+
+                const msg = `طلب خدمة سريع من تطبيق القرية الذكي:%0A%0A*العميل:* ${name}%0A*رقم الهاتف:* ${phone}%0A*الحرفة المطلوبة:* ${job}%0A*التفاصيل:* ${details || 'لا توجد تفاصيل إضافية'}`;
+                window.open(`https://api.whatsapp.com/send?phone=${WEBSITE_ADMIN_PHONE}&text=${msg}`, '_blank');
+            };
+
+            // حفظ ونشر بطاقة عامل جديدة في الـ Supabase Database
+            document.getElementById("saveBtn").onclick = async () => {
+                const name = document.getElementById("wName").value.trim();
+                const phone = document.getElementById("wPhone").value.trim();
+                const job = document.getElementById("wJob").value.trim();
+                const address = document.getElementById("address").value.trim();
+                const imgFile = document.getElementById("wImageFile").files[0];
+
+                if(!name || !phone || !job) {
+                    alert("يرجى ملء كافة البيانات المطلوبة لتسجيل بطاقتك المهنية!");
+                    return;
+                }
+
+                document.getElementById("saveBtn").innerText = "جاري النشر وتأكيد البطاقة...";
+                document.getElementById("saveBtn").disabled = true;
+
+                let base64Img = "";
+                if(imgFile) {
+                    base64Img = await convertImageToBase64(imgFile);
+                }
+
+                // كائن البيانات لإدخاله في جدول workers على Supabase
+                const workerPayload = {
+                    name: name,
+                    phone: phone,
+                    job: job,
+                    address: address || "داخل القرية",
+                    image_url: base64Img || defaultImgWorker
+                };
+
+                const { data, error } = await supa.from("workers").insert([workerPayload]);
+
+                if(error) {
+                    alert("حدث خطأ أثناء الاتصال بالسيرفر، يرجى المحاولة لاحقاً.");
+                    console.error(error);
+                } else {
+                    alert("تهانينا! تم نشر بطاقتك المهنية بنجاح في دليل عمال القرية.");
+                    // تفريغ الحقول والعودة لصفحة العرض
+                    document.getElementById("wName").value = "";
+                    document.getElementById("wPhone").value = "";
+                    document.getElementById("wJob").value = "";
+                    document.getElementById("address").value = "";
+                    document.getElementById("wImageFile").value = "";
+                    
+                    document.getElementById("btnClient").click();
+                }
+
+                document.getElementById("saveBtn").innerText = "نشر البطاقة المهنية الآن";
+                document.getElementById("saveBtn").disabled = false;
+            };
+
+            // تشغيل الرندرة الأولية للمحلات عند فتح التطبيق
+            renderShops();
+        });
     </script>
 </body>
 </html>
