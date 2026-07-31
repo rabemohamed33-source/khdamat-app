@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>تطبيق الخدمات الذكية المحلي الشامل</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2ecc71">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+.download-app-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px; /* المسافة بين الأيقونة والنص */
+  background-color: #2563eb; /* لون أزرق احترافي - يمكنك تغييره ليناسب هوية موقعك */
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-family: sans-serif;
+  font-weight: bold;
+  font-size: 14px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  direction: rtl; /* لضمان التنسيق العربي الصحيح */
+}
+
+/* تأثير عند تمرير الماوس أو الضغط */
+.download-app-btn:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.download-app-btn:active {
+  transform: translateY(1px);
+}
+        /* ==========================================================================
+           1. التصميم المشترك وتصميم موقع المحلات والتوصيل (التصنيف الأخضر/البرتقالي)
+           ========================================================================== */
+        :root {
+            --primary-color: #2ecc71;
+            --secondary-color: #e67e22;
+            --dark-color: #2c3e50;
+            --light-color: #f1f2f6;
+            --card-bg: #ffffff;
+            --danger-color: #e74c3c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            padding-bottom: 80px;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 1.2rem;
+        }
+
+        .container {
+            padding: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            margin: 15px 0;
+            color: var(--dark-color);
+            border-right: 4px solid var(--primary-color);
+            padding-right: 8px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 360px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+        }
+
+        .card-info {
+            padding: 10px;
+            text-align: right;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-info h3 {
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-info p {
+            color: #7f8c8d;
+            font-size: 0.75rem;
+            margin-bottom: 8px;
+        }
+
+        .price {
+            color: var(--secondary-color);
+            font-weight: bold;
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 65px;
+            background-color: white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #7f8c8d;
+            font-size: 0.75rem;
+            cursor: pointer;
+            flex-grow: 1;
+            padding: 5px 0;
+        }
+
+        .nav-item.active {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .nav-item span {
+            font-size: 1.3rem;
+            margin-bottom: 2px;
+        }
+
+        .page { display: none; }
+        .active-page { display: block; }
+
+        .back-btn {
+            background-color: #7f8c8d;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+            display: inline-block;
+        }
+
+        form {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        form input, form select, form button, form textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        form input:focus, form select:focus, form textarea:focus { border-color: var(--primary-color); }
+        form input[type="file"] { background: #f8f9fa; padding: 8px; }
+        form label { display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: bold; }
+        form button { background-color: var(--secondary-color); color: white; border: none; font-weight: bold; margin-top: 5px; cursor: pointer; }
+
+        .notice {
+            background-color: #e8f8f5;
+            padding: 12px;
+            border-right: 4px solid var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 0.8rem;
+            border-radius: 4px;
+            line-height: 1.4;
+        }
+
+        .owner-section {
+            background-color: #fdf2e9;
+            border: 2px dashed var(--secondary-color);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .owner-shop-item {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        /* ==========================================================================
+           2. كود ستايل الموقع الثاني الخاص بالخدمات والعمال (تأثير النيلي والبنفسجي)
+           ========================================================================== */
+        .services-theme {
+            background: #f8f9fa;
+            line-height: 1.6;
+        }
+        .services-theme .hero {
+            text-align: center;
+            background: white;
+            padding: 30px 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+        .services-theme .hero h1 {
+            font-size: 1.8rem;
+            color: #333;
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+        .services-theme .hero p {
+            font-size: 1rem;
+            color: #666;
+        }
+        .services-theme .mode-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 25px;
+            flex-direction: column;
+            align-items: center;
+        }
+        .services-theme .mode-btn {
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 15px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            color: white;
+            width: 100%;
+            max-width: 300px;
+            text-align: center;
+        }
+        .services-theme .client-mode { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .services-theme .worker-mode { background: linear-gradient(135deg, #38bdf8, #0ea5e9); }
+        .services-theme .request-mode { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+        
+        .services-theme .filters { display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px; }
+        .services-theme .filter-input { padding: 15px; border: 2px solid #e9ecef; border-radius: 12px; font-size: 16px; width: 100%; }
+        
+        .services-theme .workers-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            padding: 0 5px;
+        }
+        @media (min-width: 480px) {
+            .services-theme .workers-grid { grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        }
+        
+        .services-theme .worker-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+            transition: all 0.3s;
+            margin: 0 auto;
+            width: 100%;
+            max-width: 350px;
+        }
+        .services-theme .worker-img {
+            height: 140px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+        }
+        .services-theme .worker-img img { width: 100%; height: 140px; border-radius: 0; object-fit: cover; margin-bottom: 0; }
+        .services-theme .worker-info { padding: 20px; }
+        .services-theme .worker-name { font-size: 1.3rem; font-weight: bold; color: #333; margin-bottom: 8px; display: block;}
+        .services-theme .worker-job { color: #667eea; font-size: 1.1rem; font-weight: 500; margin-bottom: 10px; }
+        
+        .services-theme .worker-location {
+            color: #666;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .services-theme .worker-rating { color: #f59e0b; font-size: 1rem; margin-bottom: 12px; }
+        .services-theme .worker-actions { display: flex; flex-direction: column; gap: 10px; }
+        
+        .services-theme .whatsapp-btn { background: #25D366; color: white; text-align: center; padding: 12px; border-radius: 12px; font-weight: bold; text-decoration: none; display: block;}
+        .services-theme .call-btn { background: #28a745; color: white; text-align: center; padding: 12px; border-radius: 12px; font-weight: bold; text-decoration: none; display: block;}
+        
+        .services-theme .rating-btn { background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+        
+        .services-theme .form-section { background: white; padding: 25px 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 25px; display: none; }
+        .services-theme .form-section.active { display: block; }
+        .services-theme .form-group { margin-bottom: 18px; }
+        .services-theme .form-group label { display: block; margin-bottom: 6px; font-weight: bold; color: #333; font-size: 0.9rem;}
+        .services-theme .form-group input, .services-theme .form-group textarea { width: 100%; padding: 14px 15px; border: 2px solid #e9ecef; border-radius: 12px; font-size: 16px; }
+        .services-theme .form-group input:focus, .services-theme .form-group textarea:focus { outline: none; border-color: #667eea; }
+        .services-theme .form-group input[type="file"] { background: #f8f9fa; padding: 8px; }
+        
+        .services-theme .btn-request { display: inline-block; background-color: #4B0082; color: #fff; padding: 10px 20px; margin: 10px 0; border-radius: 5px; text-decoration: none; font-weight: bold; text-align: center; width: 100%; border:none; cursor:pointer;}
+        .services-theme .description { font-size: 0.85rem; color:#666; text-align: center; margin-bottom: 15px;}
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 id="main-title">الخدمة الذكية للتوصيل</h1>
+    </header>
+
+    <div class="container">
+
+        <div id="shops-page" class="page active-page">
+            <h2>المحلات والصيدليات المتاحة</h2>
+            <div id="shops-grid" class="grid"></div>
+        </div>
+
+        <div id="services-page" class="page services-theme">
+            <div class="hero">
+                <h1>ابحث عن عامل ماهر قريب منك</h1>
+                <p>كهربائيين • نجارين • سباكين • عمال تنظيف وأكثر من 50 مهنة متوفرة الآن</p>
+            </div>
+
+            <div class="mode-buttons">
+                <button id="btnClient" class="mode-btn client-mode">👤 أنا عميل (ابحث)</button>
+                <button id="btnWorker" class="mode-btn worker-mode">🛠️ أنا عامل (سجل خدمتك)</button>
+                 
+<!-- زر تحميل التطبيق -->
+<a href="https://www.mediafire.com/file/wkiiiiet15mhjml/_خدمات_عامة_19762155+(1).apk/file
+
+" target="_blank" class="download-app-btn">
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+  تحميل التطبيق على الهاتف
+</a>    </div>
+
+            <div class="description">اختر التبويب المناسب لك من الأعلى للتنقل بين البحث، التسجيل، أو إرسال طلب سريع.</div>
+
+            <div id="clientPage" class="form-section active">
+                <div class="filters">
+                    <input type="text" class="filter-input" id="search" placeholder="ابحث بالحرفة (مثال: نجار)...">
+                </div>
+                <div id="workersList" class="workers-grid"></div>
+            </div>
+
+            <div id="quickRequestPage" class="form-section">
+                <h2 style="text-align:center; margin-bottom:20px; color:#333; border:none;">📋 نموذج طلب خدمة سريع</h2>
+                <p class="description">أرسل طلبك مباشرة لإدارة الموقع وسيتم توفير الفني المناسب لك فوراً!</p>
+                
+                <div class="form-group">
+                    <label>اسمك الكريم</label>
+                    <input id="reqName" placeholder="أدخل اسمك" required>
+                </div>
+                <div class="form-group">
+                    <label>رقم هاتفك للتواصل</label>
+                    <input id="reqPhone" type="tel" placeholder="010xxxxxxxx" required>
+                </div>
+                <div class="form-group">
+                    <label>الخدمة أو الحرفة المطلوبة</label>
+                    <input id="reqJob" placeholder="مثال: سباك، تصليح غسالة، كهربائي..." required>
+                </div>
+                <div class="form-group">
+                    <label>تفاصيل المشكلة أو الطلب</label>
+                    <textarea id="reqDetails" rows="4" placeholder="اكتب هنا تفاصيل العمل المطلوب بدقة لسهولة تسعيره والمساعدة..."></textarea>
+                </div>
+                
+                <button id="submitRequestBtn" class="btn-request" style="background-color: #7c3aed;">إرسال الطلب الآن عبر واتساب 🚀</button>
+            </div>
+
+            <div id="workerPage" class="form-section">
+                <h2 style="text-align:center; margin-bottom:20px; color:#333; border:none;">تسجيل بطاقة عامل 🛠️</h2>
+                
+                <div class="form-group">
+                    <label>الاسم الكامل</label>
+                    <input id="wName" placeholder="أدخل اسمك الكامل" required>
+                </div>
+                <div class="form-group">
+                    <label>رقم الهاتف</label>
+                    <input id="wPhone" type="tel" placeholder="010xxxxxxxx" required>
+                </div>
+                <div class="form-group">
+                    <label>الحرفة / الوظيفة</label>
+                    <input id="wJob" placeholder="مثال: كهربائي، نجار، سباك..." required>
+                </div>
+                <div class="form-group">
+                    <label>العنوان (اختياري)</label>
+                    <input id="address" type="text" placeholder="المنطقة أو الحي">
+                </div>
+                <div class="form-group">
+                    <label for="wImageFile">اختر صورتك الشخصية أو كارت العمل (من الاستوديو):</label>
+                    <input id="wImageFile" type="file" accept="image/*">
+                </div>
+                
+                <button id="saveBtn" class="btn-request" style="background-color: #22c55e;">نشر البطاقة المهنية الآن</button>
+            </div>
+        </div>
+
+        <div id="shop-view-page" class="page">
+            <button class="back-btn" onclick="showPage('shops-page')">← العودة للمحلات</button>
+            <h2 id="current-shop-name">اسم المتجر</h2>
+            <div id="products-grid" class="grid"></div>
+        </div>
+
+        <div id="admin-page" class="page">
+            <div style="text-align: left; margin-bottom: 10px;">
+                <button onclick="activateOwnerMode()" style="background:none; border:none; color:#7f8c8d; font-size:0.75rem; cursor:pointer;">🛠️ دخول الإدارة (للمالك)</button>
+            </div>
+
+            <div id="owner-panel" class="owner-section" style="display: none;">
+                <h3 style="color: var(--secondary-color); font-size: 1rem; margin-bottom: 5px;">👑 لوحة تحكم مالك الموقع</h3>
+                <p style="font-size: 0.8rem; color: #7f8c8d; margin-bottom: 10px;">قائمة حذف المتاجر الحية والمخالفة:</p>
+                <ul id="owner-shops-list"></ul>
+            </div>
+
+            <div class="notice">
+                🔒 <strong>تأمين التاجر الذكي:</strong> المتاجر التي تصنعها من هذا الهاتف مرتبطة ببصمته المشفّرة لتأمينها التام.
+            </div>
+
+            <h2>إنشاء متجر جديد بالقرية</h2>
+            <form id="add-shop-form">
+                <input type="text" id="shop-name" placeholder="اسم المحل / الصيدلية / المطعم" required>
+                <input type="text" id="shop-type" placeholder="التصنيف (سوبرماركت، مشويات..)" required>
+                <input type="text" id="shop-phone" placeholder="رقم واتساب المتجر (مثال: 2010xxxxxxx)" required>
+                <label for="shop-img">اختر صورة المتجر أو اللوجو:</label>
+                <input type="file" id="shop-img" accept="image/*">
+                <button type="submit">تأكيد ونشر المتجر</button>
+            </form>
+
+            <h2>إضافة منتج جديد لمتجرك</h2>
+            <form id="add-product-form">
+                <select id="select-shop" required></select>
+                <input type="text" id="prod-name" placeholder="اسم المنتج أو الوجبة" required>
+                <input type="number" id="prod-price" placeholder="السعر (جنيه)" required>
+                <label for="prod-img">اختر صورة للمنتج:</label>
+                <input type="file" id="prod-img" accept="image/*">
+                <button type="submit">إضافة المنتج للمتجر</button>
+            </form>
+        </div>
+
+    </div>
+
+    <div class="bottom-nav">
+        <div id="nav-shops" class="nav-item active" onclick="showPage('shops-page')">
+            <span>🏪</span>
+            <div>المتاجر والمحلات</div>
+        </div>
+        <div id="nav-services" class="nav-item" onclick="showPage('services-page')">
+            <span>🛠️</span>
+            <div>الخدمات والعمال</div>
+        </div>
+        <div id="nav-admin" class="nav-item" onclick="showPage('admin-page')">
+            <span>⚙️</span>
+            <div>لوحة متجري</div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // إعدادات وبيانات تطبيق التوصيل والمالك
+        // ==========================================
+        const OWNER_SECRET_PASSWORD = "R08206"; 
+        const WEBSITE_ADMIN_PHONE = "201000000000"; // قم بتعديل هذا الرقم إلى رقم الواتساب الخاص بك لاستقبال الطلبات السريعة
+
+        if (!localStorage.getItem('merchant_device_id')) {
+            const uniqueID = 'device_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+            localStorage.setItem('merchant_device_id', uniqueID);
+        }
+        const currentDeviceId = localStorage.getItem('merchant_device_id');
+
+        const defaultImgShop = "https://images.unsplash.com/photo-1534723328310-e82dad3ee43f?w=400";
+        const defaultImgProd = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400";
+        const defaultImgWorker = "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400";
+
+        const defaultData = {
+            shops: [
+                { id: 1, name: "صيدلية الشفاء (تجريبي)", type: "أدوية ومستحضرات", phone: "201000000000", img: defaultImgShop, ownerDeviceId: "admin" },
+                { id: 2, name: "مشويات البركة (تجريبي)", type: "فراخ - لحوم", phone: "201000000000", img: defaultImgShop, ownerDeviceId: "admin" }
+            ],
+            products: [
+                { id: 101, shopId: 1, name: "بندول اكسترا", price: 50, img: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400" },
+                { id: 102, shopId: 2, name: "وجبة ربع فرخة مندية", price: 120, img: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400" }
+            ]
+        };
+
+        let appData = JSON.parse(localStorage.getItem('deliveryAppData')) || defaultData;
+
+        function saveToStorage() { localStorage.setItem('deliveryAppData', JSON.stringify(appData)); }
+
+        function convertImageToBase64(file) {
+            return new Promise((resolve) => {
+                if (!file) resolve("");
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+            });
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active-page'));
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            
+            document.getElementById(pageId).classList.add('active-page');
+            const mainTitle = document.getElementById('main-title');
+            
+            if(pageId === 'shops-page') {
+                document.getElementById('nav-shops').classList.add('active');
+                mainTitle.innerText = "الخدمة الذكية للتوصيل";
+                renderShops();
+            }
+            if(pageId === 'services-page') {
+                document.getElementById('nav-services').classList.add('active');
+                mainTitle.innerText = "دليل الخدمات والعمال المحلي";
+                if(window.loadWorkersFromServer) window.loadWorkersFromServer();
+            }
+            if(pageId === 'admin-page') {
+                document.getElementById('nav-admin').classList.add('active');
+                mainTitle.innerText = "لوحة التحكم وإضافة المتاجر";
+                updateAdminSelect();
+            }
+        }
+
+        function renderShops() {
+            const grid = document.getElementById('shops-grid');
+            grid.innerHTML = '';
+            appData.shops.forEach(shop => {
+                grid.innerHTML += `
+                    <div class="card" onclick="openShop(${shop.id})">
+                        <img src="${shop.img || defaultImgShop}" alt="${shop.name}">
+                        <div class="card-info">
+                            <div>
+                                <h3>${shop.name}</h3>
+                                <p>${shop.type}</p>
+                            </div>
+                            <button class="btn" style="background-color: var(--dark-color)">دخول المتجر ←</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function openShop(shopId) {
+            const shop = appData.shops.find(s => s.id === shopId);
+            document.getElementById('current-shop-name').innerText = shop.name;
+            
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '';
+            const shopProducts = appData.products.filter(p => p.shopId === shopId);
+
+            if(shopProducts.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; padding:20px;">لا توجد منتجات معروضة حالياً.</p>';
+            } else {
+                shopProducts.forEach(prod => {
+                    grid.innerHTML += `
+                        <div class="card">
+                            <img src="${prod.img || defaultImgProd}" alt="${prod.name}">
+                            <div class="card-info">
+                                <h3>${prod.name}</h3>
+                                <div class="price">${prod.price} ج.م</div>
+                                <button class="btn" onclick="orderViaWhatsApp('${shop.name}', '${shop.phone}', '${prod.name}', ${prod.price})">📱 اطلب واتساب</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            showPage('shop-view-page');
+        }
+
+        function orderViaWhatsApp(shopName, shopPhone, prodName, prodPrice) {
+            const message = `السلام عليكم، أريد طلب منتج من خلال تطبيق الخدمة الذكية:%0A%0A*المحل:* ${shopName}%0A*المنتج:* ${prodName}%0A*السعر:* ${prodPrice} جنيه`;
+            const whatsappURL = `https://api.whatsapp.com/send?phone=${shopPhone}&text=${message}`;
+            window.open(whatsappURL, '_blank');
+        }
+
+        function updateAdminSelect() {
+            const select = document.getElementById('select-shop');
+            select.innerHTML = '';
+            const myShops = appData.shops.filter(shop => shop.ownerDeviceId === currentDeviceId);
+
+            if(myShops.length === 0) {
+                select.innerHTML = '<option value="">⚠️ لم تنشئ متجراً من هذا الهاتف بعد</option>';
+            } else {
+                select.innerHTML = '<option value="">اختر متجرك لإضافة منتج</option>';
+                myShops.forEach(shop => {
+                    select.innerHTML += `<option value="${shop.id}">${shop.name}</option>`;
+                });
+            }
+        }
+
+        document.getElementById('add-shop-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const imageFile = document.getElementById('shop-img').files[0];
+            const base64Image = await convertImageToBase64(imageFile);
+
+            const newShop = {
+                id: Date.now(),
+                name: document.getElementById('shop-name').value,
+                type: document.getElementById('shop-type').value,
+                phone: document.getElementById('shop-phone').value,
+                img: base64Image || defaultImgShop,
+                ownerDeviceId: currentDeviceId
+            };
+
+            appData.shops.push(newShop);
+            saveToStorage();
+            this.reset();
+            alert('تم إنشاء متجرك بنجاح وتأمينه على هاتفك!');
+            if(document.getElementById('owner-panel').style.display === 'block') renderOwnerShopsList();
+            showPage('shops-page');
+        });
+
+        document.getElementById('add-product-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const selectedShopId = parseInt(document.getElementById('select-shop').value);
+            if(!selectedShopId) { alert('الرجاء اختيار متجر صالح أولاً.'); return; }
+
+            const targetShop = appData.shops.find(s => s.id === selectedShopId);
+            if(targetShop.ownerDeviceId !== currentDeviceId) { alert('⚠️ خطأ في الصلاحيات!'); return; }
+
+            const imageFile = document.getElementById('prod-img').files[0];
+            const base64Image = await convertImageToBase64(imageFile);
+
+            const newProd = {
+                id: Date.now(),
+                shopId: selectedShopId,
+                name: document.getElementById('prod-name').value,
+                price: parseFloat(document.getElementById('prod-price').value),
+                img: base64Image || defaultImgProd
+            };
+
+            appData.products.push(newProd);
+            saveToStorage();
+            this.reset();
+            alert('تم إضافة المنتج للمتجر وصورته بنجاح!');
+            showPage('shops-page');
+        });
+
+        function activateOwnerMode() {
+            const password = prompt("برجاء إدخال كود المالك السري لرؤية خيارات الحذف:");
+            if (password === OWNER_SECRET_PASSWORD) {
+                document.getElementById('owner-panel').style.display = 'block';
+                renderOwnerShopsList();
+            } else { alert("الكود السري خطأ!"); }
+        }
+
+        function renderOwnerShopsList() {
+            const list = document.getElementById('owner-shops-list');
+            list.innerHTML = '';
+            appData.shops.forEach(shop => {
+                list.innerHTML += `
+                    <li class="owner-shop-item">
+                        <span><strong>${shop.name}</strong> (${shop.type})</span>
+                        <button onclick="deleteShopByOwner(${shop.id}, '${shop.name}')" style="background:var(--danger-color); color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">❌ حذف نهائي</button>
+                    </li>
+                `;
+            });
+        }
+
+        function deleteShopByOwner(shopId, shopName) {
+            if (confirm(`هل أنت متأكد تماماً من حذف متجر "${shopName}"؟`)) {
+                appData.shops = appData.shops.filter(shop => shop.id !== shopId);
+                appData.products = appData.products.filter(prod => prod.shopId !== shopId);
+                saveToStorage();
+                renderOwnerShopsList();
+                renderShops();
+                alert(`تم حذف متجر ${shopName}`);
+            }
+        }
+
+        // ==========================================
+        // 3. كود الـ JavaScript الخاص بموقع الخدمات والعمال (Supabase)
+        // ==========================================
+        const ratings = {};
+        
+        for (let key in localStorage) {
+            if (key.startsWith("rating_")) {
+                const workerId = key.replace("rating_", "");
+                ratings[workerId] = JSON.parse(localStorage.getItem(key));
+            }
+        }
+
+        function rateWorker(workerId, stars) {
+            if (!ratings[workerId]) { ratings[workerId] = { total: 0, count: 0 }; }
+            ratings[workerId].total += stars;
+            ratings[workerId].count += 1;
+            localStorage.setItem("rating_" + workerId, JSON.stringify(ratings[workerId]));
+            alert("شكراً لتقييمك المباشر!");
+            if(window.loadWorkersFromServer) window.loadWorkersFromServer();
+        }
+
+        document.addEventListener("DOMContentLoaded", function(){
+            const SUPABASE_URL = "https://jcftfbqqhwhwbocjfpmh.supabase.co";
+            const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjZnRmYnFxaHdod2JvY2pmcG1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxOTIwMzksImV4cCI6MjA4Mjc2ODAzOX0.125BNiA9cnqe4EkEiIoKikvYzauxqhgrXK2LMEIAw5g";
+            const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            const workerPage = document.getElementById("workerPage");
+            const clientPage = document.getElementById("clientPage");
+            const quickRequestPage = document.getElementById("quickRequestPage");
+            const workersList = document.getElementById("workersList");
+            const searchInput = document.getElementById("search");
+            let localWorkersArray = []; // لتخزين العمال محلياً لسهولة الفلترة والبحث السريع
+
+            // أزرار التنقل الداخلية داخل صفحة الخدمات
+            document.getElementById("btnWorker").onclick = ()=> {
+                workerPage.classList.add("active");
+                clientPage.classList.remove("active");
+                quickRequestPage.classList.remove("active");
+            };
+
+            document.getElementById("btnClient").onclick = ()=> {
+                clientPage.classList.add("active");
+                workerPage.classList.remove("active");
+                quickRequestPage.classList.remove("active");
+                loadWorkersFromServer();
+            };
+
+            document.getElementById("btnOpenRequest").onclick = ()=> {
+                quickRequestPage.classList.add("active");
+                clientPage.classList.remove("active");
+                workerPage.classList.remove("active");
+            };
+
+            // دالة جلب العمال من سيرفر Supabase وعرضهم في الدليل
+            async function loadWorkersFromServer() {
+                workersList.innerHTML = "<p style='text-align:center; padding:20px; width:100%; grid-column:1/-1;'>جاري تحميل دليل العمال المهنيين...</p>";
+                
+                const { data, error } = await supa.from("workers").select("*").order("id", { ascending: false });
+                
+                if (error) {
+                    workersList.innerHTML = "<p style='text-align:center; padding:20px; color:red; grid-column:1/-1;'>حدث خطأ أثناء تحميل البيانات من السيرفر.</p>";
+                    console.error(error);
+                    return;
+                }
+                
+                localWorkersArray = data || [];
+                displayWorkers(localWorkersArray);
+            }
+            window.loadWorkersFromServer = loadWorkersFromServer;
+
+            // دالة بناء وعرض بطاقات العمال في صفحة البحث
+            function displayWorkers(workers) {
+                workersList.innerHTML = "";
+                if(workers.length === 0) {
+                    workersList.innerHTML = "<p style='text-align:center; padding:20px; grid-column:1/-1;'>لا يوجد عمال مسجلين في هذا التصنيف حالياً.</p>";
+                    return;
+                }
+
+                workers.forEach(worker => {
+                    // حساب النجوم التقييمية المخزنة في الـ localStorage لهذا الجهاز
+                    const rData = ratings[worker.id] || { total: 0, count: 0 };
+                    const avg = rData.count > 0 ? (rData.total / rData.count).toFixed(1) : "جديد";
+                    const starsStr = rData.count > 0 ? "⭐ ".repeat(Math.round(rData.total / rData.count)) : "⭐ لم يقيم بعد";
+
+                    workersList.innerHTML += `
+                        <div class="worker-card">
+                            <div class="worker-img">
+                                ${worker.image_url ? `<img src="${worker.image_url}" alt="${worker.name}">` : `🛠️`}
+                            </div>
+                            <div class="worker-info">
+                                <span class="worker-name">${worker.name}</span>
+                                <div class="worker-job">${worker.job}</div>
+                                <div class="worker-location">📍 ${worker.address || 'داخل القرية'}</div>
+                                <div class="worker-rating">
+                                    <span>التقييم: ${avg} (${rData.count} صوت)</span><br>
+                                    <small>${starsStr}</small>
+                                    <div style="margin-top:5px; display:flex; gap:3px;">
+                                        <button class="rating-btn" onclick="rateWorker(${worker.id}, 1)">1⭐</button>
+                                        <button class="rating-btn" onclick="rateWorker(${worker.id}, 3)">3⭐</button>
+                                        <button class="rating-btn" onclick="rateWorker(${worker.id}, 5)">5⭐</button>
+                                    </div>
+                                </div>
+                                <div class="worker-actions">
+                                    <a href="https://wa.me/${worker.phone.startsWith('2') ? worker.phone : '2' + worker.phone}" target="_blank" class="whatsapp-btn">💬 تواصل واتساب</a>
+                                    <a href="tel:${worker.phone}" class="call-btn">📞 اتصال هاتفي مباشر</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // ميزة البحث والفلترة الذكية أثناء الكتابة
+            searchInput.oninput = () => {
+                const query = searchInput.value.toLowerCase().trim();
+                const filtered = localWorkersArray.filter(w => 
+                    w.job.toLowerCase().includes(query) || 
+                    w.name.toLowerCase().includes(query) ||
+                    (w.address && w.address.toLowerCase().includes(query))
+                );
+                displayWorkers(filtered);
+            };
+
+            // إرسال طلب خدمة سريع عبر الواتساب مباشرة إلى إدارة الموقع
+            document.getElementById("submitRequestBtn").onclick = () => {
+                const name = document.getElementById("reqName").value.trim();
+                const phone = document.getElementById("reqPhone").value.trim();
+                const job = document.getElementById("reqJob").value.trim();
+                const details = document.getElementById("reqDetails").value.trim();
+
+                if(!name || !phone || !job) {
+                    alert("برجاء ملء الحقول الأساسية (الاسم، الهاتف، والحرفة) لإرسال طلبك.");
+                    return;
+                }
+
+                const msg = `طلب خدمة سريع من تطبيق القرية الذكي:%0A%0A*العميل:* ${name}%0A*رقم الهاتف:* ${phone}%0A*الحرفة المطلوبة:* ${job}%0A*التفاصيل:* ${details || 'لا توجد تفاصيل إضافية'}`;
+                window.open(`https://api.whatsapp.com/send?phone=${WEBSITE_ADMIN_PHONE}&text=${msg}`, '_blank');
+            };
+
+            // حفظ ونشر بطاقة عامل جديدة في الـ Supabase Database
+            document.getElementById("saveBtn").onclick = async () => {
+                const name = document.getElementById("wName").value.trim();
+                const phone = document.getElementById("wPhone").value.trim();
+                const job = document.getElementById("wJob").value.trim();
+                const address = document.getElementById("address").value.trim();
+                const imgFile = document.getElementById("wImageFile").files[0];
+
+                if(!name || !phone || !job) {
+                    alert("يرجى ملء كافة البيانات المطلوبة لتسجيل بطاقتك المهنية!");
+                    return;
+                }
+
+                document.getElementById("saveBtn").innerText = "جاري النشر وتأكيد البطاقة...";
+                document.getElementById("saveBtn").disabled = true;
+
+                let base64Img = "";
+                if(imgFile) {
+                    base64Img = await convertImageToBase64(imgFile);
+                }
+
+                // كائن البيانات لإدخاله في جدول workers على Supabase
+                const workerPayload = {
+                    name: name,
+                    phone: phone,
+                    job: job,
+                    address: address || "داخل القرية",
+                    image_url: base64Img || defaultImgWorker
+                };
+
+                const { data, error } = await supa.from("workers").insert([workerPayload]);
+
+                if(error) {
+                    alert("حدث خطأ أثناء الاتصال بالسيرفر، يرجى المحاولة لاحقاً.");
+                    console.error(error);
+                } else {
+                    alert("تهانينا! تم نشر بطاقتك المهنية بنجاح في دليل عمال القرية.");
+                    // تفريغ الحقول والعودة لصفحة العرض
+                    document.getElementById("wName").value = "";
+                    document.getElementById("wPhone").value = "";
+                    document.getElementById("wJob").value = "";
+                    document.getElementById("address").value = "";
+                    document.getElementById("wImageFile").value = "";
+                    
+                    document.getElementById("btnClient").click();
+                }
+
+                document.getElementById("saveBtn").innerText = "نشر البطاقة المهنية الآن";
+                document.getElementById("saveBtn").disabled = false;
+            };
+
+            // تشغيل الرندرة الأولية للمحلات عند فتح التطبيق
+            renderShops();
+        });
+    </script>
+</body>
+</html>

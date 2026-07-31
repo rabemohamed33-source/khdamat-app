@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>طلب خدمة - عمال كفاءة</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* ==========================================================================
+       التصميم العام والاتساق البصري للموقع
+       ========================================================================== */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    body { background: #f8f9fa; line-height: 1.6; padding-bottom: 40px; }
+    
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px 0; position: sticky; top: 0; z-index: 100; transition: all 0.3s; }
+    .header:hover { box-shadow: 0 5px 20px rgba(102,126,234,0.4); }
+    .nav { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+    .logo { font-size: 1.8em; font-weight: bold; }
+    
+    .btn { padding: 12px 25px; border: none; border-radius: 25px; font-weight: bold; cursor: pointer; transition: all 0.3s; text-decoration: none; display: inline-block; }
+    .btn-primary { background: #ff6b6b; color: white; }
+    .btn-primary:hover { background: #ff5252; transform: translateY(-2px); }
+    .btn-secondary { background: white; color: #667eea; }
+    .btn-secondary:hover { background: #f0f0f0; transform: translateY(-2px); }
+    
+    .main { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
+    
+    .hero { text-align: center; background: white; padding: 50px 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 30px; }
+    .hero h1 { font-size: 2.8em; color: #333; margin-bottom: 15px; }
+    .hero p { font-size: 1.2em; color: #666; }
+    
+    .mode-buttons { display: flex; gap: 15px; justify-content: center; margin-bottom: 30px; }
+    .mode-btn { padding: 15px 30px; font-size: 1.1em; border-radius: 15px; border: none; cursor: pointer; transition: all 0.3s; font-weight: bold; color: white; flex: 1; max-width: 250px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .mode-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+    .client-mode { background: linear-gradient(135deg, #22c55e, #16a34a); }
+    .request-mode { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+    
+    .form-section { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 40px; display: none; }
+    .form-section.active-section { display: block; animation: fadeIn 0.4s ease-in-out; }
+    
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; font-size: 1.05em; }
+    .form-group input, .form-group textarea { width: 100%; padding: 15px 20px; border: 2px solid #e9ecef; border-radius: 15px; font-size: 1.05em; background: white; transition: all 0.3s; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+    .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); transform: translateY(-1px); }
+    
+    /* تصميم كروت عرض الطلبات المستلمة */
+    .services-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 30px; }
+    .service-card { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: all 0.3s; border-left: 5px solid #a855f7; display: flex; flex-direction: column; justify-content: space-between; }
+    .service-card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(0,0,0,0.1); }
+    .service-img { height: 100px; background: linear-gradient(45deg, #a855f7, #7c3aed); display: flex; align-items: center; justify-content: center; font-size: 2.2em; color: white; }
+    
+    .service-info { padding: 25px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+    .service-details { font-size: 1.05em; color: #333; margin-bottom: 15px; line-height: 1.6; text-align: right; word-break: break-word; white-space: pre-line; }
+    .service-contact { color: #666; margin-bottom: 15px; font-weight: bold; font-size: 0.95em; }
+    .service-actions { display: flex; gap: 10px; }
+    
+    .whatsapp-btn { flex: 1; background: #25D366; color: white; text-align: center; padding: 14px; border-radius: 12px; font-weight: bold; text-decoration: none; transition: 0.2s; }
+    .whatsapp-btn:hover { background: #20ba5a; }
+    .call-btn { flex: 1; background: #28a745; color: white; text-align: center; padding: 14px; border-radius: 12px; font-weight: bold; text-decoration: none; transition: 0.2s; }
+    .call-btn:hover { background: #218838; }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @media (max-width: 768px) { 
+      .hero h1 { font-size: 2em; } 
+      .form-section { padding: 30px 20px; } 
+      .services-grid { grid-template-columns: 1fr; gap: 20px; } 
+      .mode-buttons { flex-direction: column; align-items: center; }
+      .mode-btn { width: 100%; max-width: 100%; }
+      .service-actions { flex-direction: column; } 
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="nav">
+      <div class="logo">👷 عمال كفاءة</div>
+      <a href="index.html" class="btn btn-secondary">🏠 العودة</a>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="hero">
+      <h1>📋 منصة لطلب خدمات القرية</h1>
+      <p>اكتب بيانات طلبك بدقة، وسيظهر فوراً للفنيين والعمال المتواجدين بالمنطقة</p>
+    </div>
+
+    <div class="mode-buttons">
+      <button id="btnClientView" class="mode-btn client-mode">🔍 عرض الطلبات الحالية</button>
+      <button id="btnOpenRequestForm" class="mode-btn request-mode">✍️ أضف طلب خدمة جديد</button>
+    </div>
+
+    <div id="requestFormSection" class="form-section">
+      <h2 style="text-align:center; margin-bottom:25px; color:#333;">✍️ نموذج طلب خدمة سريع ومفصل</h2>
+      <form id="serviceForm">
+        <div class="form-group">
+          <label for="reqName">اسمك الكريم:</label>
+          <input type="text" id="reqName" placeholder="أدخل اسمك بالكامل" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="contact">رقم الهاتف والواتساب:</label>
+          <input type="tel" id="contact" placeholder="010xxxxxxxx" required>
+        </div>
+
+        <div class="form-group">
+          <label for="reqJob">الخدمة أو الحرفة المطلوبة:</label>
+          <input type="text" id="reqJob" placeholder="مثال: سباك، نجار، كهربائي، تصليح أجهزة..." required>
+        </div>
+
+        <div class="form-group">
+          <label for="details">تفاصيل المشكلة أو العمل المطلوب:</label>
+          <textarea id="details" rows="4" placeholder="اكتب هنا تفاصيل العمل المطلوب بدقة لسهولة تسعيره وفهمه..." required></textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="width:100%; font-size:1.2em; padding:18px; border-radius: 15px;">📤 نشر الطلب في الدليل</button>
+      </form>
+    </div>
+
+    <div id="clientViewSection" class="form-section active-section">
+      <h2 style="text-align:center; margin-bottom:30px; color:#333;">الطلبات الحالية المتاحة بالقرية 🛠️</h2>
+      <div class="services-grid" id="servicesList"></div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://jcftfbqqhwhwbocjfpmh.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjZnRmYnFxaHdod2JvY2pmcG1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxOTIwMzksImV4cCI6MjA4Mjc2ODAzOX0.125BNiA9cnqe4EkEiIoKikvYzauxqhgrXK2LMEIAw5g";
+    const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const form = document.getElementById('serviceForm');
+    const servicesList = document.getElementById('servicesList');
+    
+    const requestFormSection = document.getElementById('requestFormSection');
+    const clientViewSection = document.getElementById('clientViewSection');
+    const btnClientView = document.getElementById('btnClientView');
+    const btnOpenRequestForm = document.getElementById('btnOpenRequestForm');
+
+    // أزرار التحكم بالتنقل
+    btnClientView.onclick = function() {
+      clientViewSection.classList.add('active-section');
+      requestFormSection.classList.remove('active-section');
+      loadServices();
+    };
+
+    btnOpenRequestForm.onclick = function() {
+      requestFormSection.classList.add('active-section');
+      clientViewSection.classList.remove('active-section');
+    };
+
+    // الاستماع لحدث إرسال النموذج وحفظ البيانات المدمجة في السوبابيز
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const name = document.getElementById('reqName').value.trim();
+      const job = document.getElementById('reqJob').value.trim();
+      const details = document.getElementById('details').value.trim();
+      let contact = document.getElementById('contact').value.trim();
+      
+      // تنظيف رقم الهاتف
+      contact = contact.replace(/\D/g, "");
+      if (contact.startsWith("0")) {
+        contact = contact.substring(1);
+      }
+      const phoneWithCode = "20" + contact;
+
+      if(!name || !job || !details || contact.length < 10) {
+        alert("⚠️ يرجى ملء كافة الحقول بشكل صحيح والتأكد من رقم الهاتف.");
+        return;
+      }
+
+      // تجهيز النص المدمج والمنظم لعرضه في كارت الفني وفي عمود request_details بالسوبابيز
+      const fullFormattedDetails = `👤 صاحب الطلب: ${name}\n🔧 نوع الخدمة: ${job}\n📝 التفاصيل: ${details}`;
+
+      // إدخل البيانات المباشر إلى جدول الـ requests بسوبابيز دون تعديل السيرفر
+      const { data, error } = await supa.from('requests').insert([
+        { 
+          request_details: fullFormattedDetails, 
+          contact_number: phoneWithCode 
+        }
+      ]);
+
+      if(error) {
+        alert("❌ عذراً، فشل نشر الطلب: " + error.message);
+        return;
+      }
+
+      form.reset();
+      alert('✅ تم نشر طلبك بالتفاصيل الكاملة بنجاح في دليل القرية المباشر!');
+      btnClientView.click(); // الانتقال المباشر لقائمة العرض
+    });
+
+    // دالة بناء الكروت وعرضها بشكل منسق مع الأسطر البرمجية الجديدة
+    function addServiceCard(service) {
+      const card = document.createElement('div');
+      card.className = 'service-card';
+      card.innerHTML = `
+        <div class="service-img">📌 طلب خدمة</div>
+        <div class="service-info">
+          <div class="service-details">${service.request_details}</div>
+          <div class="service-contact">📱 للتواصل: 0${service.contact_number.substring(2)}</div>
+          <div class="service-actions">
+            <a href="https://wa.me/${service.contact_number}" class="whatsapp-btn" target="_blank">💬 راسل واتساب</a>
+            <a href="tel:0${service.contact_number.substring(2)}" class="call-btn">📞 اتصال مباشر</a>
+          </div>
+        </div>
+      `;
+      servicesList.appendChild(card);
+    }
+
+    // دالة جلب البيانات والطلبات المحدثة حية من الـ database
+    async function loadServices(){
+      const { data, error } = await supa
+        .from('requests')
+        .select("*")
+        .order('created_at', { ascending: false })
+        .limit(30);
+
+      if(error) { 
+        console.error("حدث خطأ أثناء تحميل الطلبات:", error); 
+        return; 
+      }
+      
+      servicesList.innerHTML = "";
+      
+      if(data.length === 0) {
+         servicesList.innerHTML = "<p style='grid-column: 1/-1; text-align:center; padding:30px; color:#888;'>لا يوجد طلبات خدمات نشطة حالياً بالقرية.</p>";
+         return;
+      }
+
+      data.forEach(s => addServiceCard(s));
+    }
+
+    // استدعاء تلقائي للطلبات عند فتح الواجهة
+    loadServices();
+  </script>
+</body>
+</html>
