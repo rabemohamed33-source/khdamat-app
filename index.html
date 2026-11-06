@@ -8,10 +8,6 @@
     <!-- مكتبة Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- إعدادات PWA ولون شريط العنونة للهواتف -->
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#3b82f6">
-
     <style>
         /* --- المتغيرات الأساسية والألوان --- */
         :root {
@@ -124,17 +120,6 @@
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--text-main); }
 
-        /* --- رفع الصور وتنسيق المعاينة --- */
-        .upload-container {
-            display: flex; align-items: center; gap: 15px;
-            margin-top: 5px; background: #f9fafb; padding: 12px;
-            border-radius: 10px; border: 1px dashed var(--border-color);
-        }
-        .img-preview {
-            width: 70px; height: 70px; border-radius: 50%;
-            object-fit: cover; border: 2px solid var(--primary-color);
-            display: none;
-        }
 
         /* --- قائمة العمال وبطاقة العامل --- */
         #search { margin-bottom: 20px; font-size: 16px; border-radius: 12px; background: #f9fafb;}
@@ -187,12 +172,12 @@
 
 <body>
 
-   
     <div class="container">
         <h1 class="main-title">خدمات قرية زنارة 👨‍🌾</h1>
 
         <!-- الصفحة الرئيسية: خيارات الدخول -->
         <div id="homePage" class="home-options">
+            
             <div class="option-card">
                 <h2>أنا عميل 🔎</h2>
                 <p class="description">استخدم هذا الخيار للبحث عن أصحاب الخدمات المتاحين والاتصال بهم مباشرة.</p>
@@ -234,22 +219,12 @@
                 <label for="wJob">الحرفة / الوظيفة</label>
                 <input id="wJob" placeholder="مثال: سباك، كهربائي، نجار">
             </div>
-         
             
-            <!-- رفع صورة من الجهاز -->
             <div class="form-group">
-                <label>اختر صورة شخصية (من جهازك)</label>
-                <input type="file" id="wImageFile" accept="image/*" onchange="previewSelectedImage(event)" style="display:none;">
-                
-                <div class="upload-container">
-                    <button type="button" class="btn" style="background:#e5e7eb; color:#1f2937; padding:8px 16px; font-size:14px;" onclick="document.getElementById('wImageFile').click()">
-                        📷 اختيار صورة
-                    </button>
-                    <span id="fileName" style="font-size: 13px; color: var(--text-muted);">لم يتم اختيار صورة</span>
-                    <img id="imagePreview" class="img-preview" alt="معاينة الصورة">
-                </div>
+                <label for="address">العنوان داخل زنارة</label>
+                <input type="text" id="address" placeholder="مثال: شارع المحطة، بجوار المسجد الكبير">
             </div>
-
+            
             <button id="saveBtn" class="btn btn-success" style="width:100%; font-size:18px; margin-top:10px;">نشر البيانات ✅</button>
         </div>
 
@@ -274,9 +249,14 @@
         // --- إدارة القائمة الجانبية ---
         function toggleSidebar() {
             const sidebar = document.getElementById("mySidebar");
-            sidebar.style.width = (sidebar.style.width === "250px") ? "0" : "250px";
+            if (sidebar) {
+                sidebar.style.width = (sidebar.style.width === "250px") ? "0" : "250px";
+            }
         }
-        function closeSidebar() { document.getElementById("mySidebar").style.width = "0"; }
+        function closeSidebar() { 
+            const sidebar = document.getElementById("mySidebar");
+            if (sidebar) sidebar.style.width = "0"; 
+        }
 
         // --- التنقل بين الصفحات ---
         const homePage = document.getElementById("homePage");
@@ -327,12 +307,14 @@
             const previewImg = document.getElementById("imagePreview");
 
             if (file) {
-                fileNameSpan.textContent = file.name;
-                previewImg.src = URL.createObjectURL(file);
-                previewImg.style.display = "block";
+                if (fileNameSpan) fileNameSpan.textContent = file.name;
+                if (previewImg) {
+                    previewImg.src = URL.createObjectURL(file);
+                    previewImg.style.display = "block";
+                }
             } else {
-                fileNameSpan.textContent = "لم يتم اختيار صورة";
-                previewImg.style.display = "none";
+                if (fileNameSpan) fileNameSpan.textContent = "لم يتم اختيار صورة";
+                if (previewImg) previewImg.style.display = "none";
             }
         }
 
@@ -358,7 +340,7 @@
                 let imageUrl = "";
 
                 // 1. رفع الصورة إلى Supabase Storage إذا تم اختيار ملف
-                if (fileInput.files.length > 0) {
+                if (fileInput && fileInput.files.length > 0) {
                     const file = fileInput.files[0];
                     const fileExt = file.name.split('.').pop();
                     const fileName = `${device_id}_${Date.now()}.${fileExt}`;
@@ -405,9 +387,9 @@
                 document.getElementById("wPhone").value = "";
                 document.getElementById("wJob").value = "";
                 document.getElementById("address").value = "";
-                fileInput.value = "";
-                document.getElementById("fileName").textContent = "لم يتم اختيار صورة";
-                document.getElementById("imagePreview").style.display = "none";
+                if (fileInput) fileInput.value = "";
+                if (document.getElementById("fileName")) document.getElementById("fileName").textContent = "لم يتم اختيار صورة";
+                if (document.getElementById("imagePreview")) document.getElementById("imagePreview").style.display = "none";
 
             } catch (error) {
                 console.error("Error saving worker:", error);
